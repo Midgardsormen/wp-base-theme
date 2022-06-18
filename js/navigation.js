@@ -1,99 +1,103 @@
+/* eslint-disable no-nested-ternary */
 /**
  * File navigation.js.
  *
  * Handles toggling the navigation menu for small screens and enables TAB key
  * navigation support for dropdown menus.
  */
-( function() {
-	const siteNavigation = document.getElementById( 'site-navigation' );
 
-	// Return early if the navigation doesn't exist.
-	if ( ! siteNavigation ) {
-		return;
+class MainNavigationMenu {
+	constructor( component ) {
+		this.component = component;
+		this.jsActiveMenusButtons = component.querySelectorAll( '.js-active-menu' );
+		this.init();
 	}
-
-	const button = siteNavigation.getElementsByTagName( 'button' )[ 0 ];
-
-	// Return early if the button doesn't exist.
-	if ( 'undefined' === typeof button ) {
-		return;
+	init() {
+		this.jsActiveMenusButtons.forEach( ( menuButton ) => {
+			const mainNavigationToggleButton = new MainNavigationToggle( menuButton );
+		} );
 	}
+}
+class MainNavigationToggle {
+	constructor( component ) {
+		this.component = component;
+		this.classToTarget = component.dataset.listtarget;
+		this.menuToTarget = this.getClosestParent( component ).querySelector( `.${ this.classToTarget }` );
+		this.ariaExtandedValue = component.getAttribute( 'aria-expanded' ) === 'true' ? 'false' : 'true';
+		this.parentSiblings = this.getSiblings( this.getClosestParent( component ) );
 
-	const menu = siteNavigation.getElementsByTagName( 'ul' )[ 0 ];
-
-	// Hide menu toggle button if menu is empty and return early.
-	if ( 'undefined' === typeof menu ) {
-		button.style.display = 'none';
-		return;
+		this.init();
 	}
-
-	if ( ! menu.classList.contains( 'nav-menu' ) ) {
-		menu.classList.add( 'nav-menu' );
+	init() {
+		this.component.addEventListener( 'click', ( ) => {
+			this.getClosestParent( this.component ).classList.toggle( 'active' );
+			this.toggleBtnAttributes();
+			this.menuToTarget.classList.toggle( 'active' );
+			this.cleanAllChildrenAttributes();
+			this.cleanAllSiblingsAttributes();
+			this.parentSiblings = this.getSiblings( this.getClosestParent( this.component ) );
+		} );
 	}
-
-	// Toggle the .toggled class and the aria-expanded value each time the button is clicked.
-	button.addEventListener( 'click', function() {
-		siteNavigation.classList.toggle( 'toggled' );
-
-		if ( button.getAttribute( 'aria-expanded' ) === 'true' ) {
-			button.setAttribute( 'aria-expanded', 'false' );
-		} else {
-			button.setAttribute( 'aria-expanded', 'true' );
-		}
-	} );
-
-	// Remove the .toggled class and set aria-expanded to false when the user clicks outside the navigation.
-	document.addEventListener( 'click', function( event ) {
-		const isClickInside = siteNavigation.contains( event.target );
-
-		if ( ! isClickInside ) {
-			siteNavigation.classList.remove( 'toggled' );
-			button.setAttribute( 'aria-expanded', 'false' );
-		}
-	} );
-
-	// Get all the link elements within the menu.
-	const links = menu.getElementsByTagName( 'a' );
-
-	// Get all the link elements with children within the menu.
-	const linksWithChildren = menu.querySelectorAll( '.menu-item-has-children > a, .page_item_has_children > a' );
-
-	// Toggle focus each time a menu link is focused or blurred.
-	for ( const link of links ) {
-		link.addEventListener( 'focus', toggleFocus, true );
-		link.addEventListener( 'blur', toggleFocus, true );
+	getClosestParent( e, liOnly ) {
+		return e.closest( 'li' ) ? e.closest( 'li' ) : ! liOnly ? e.closest( 'div.base-main-navigation' ) : false;
 	}
-
-	// Toggle focus each time a menu link with children receive a touch event.
-	for ( const link of linksWithChildren ) {
-		link.addEventListener( 'touchstart', toggleFocus, false );
+	toggleBtnAttributes() {
+		this.component.classList.toggle( 'active' );
+		this.component.setAttribute( 'aria-expanded', this.ariaExtandedValue );
+		this.ariaExtandedValue = ! this.ariaExtandedValue;
 	}
-
-	/**
-	 * Sets or removes .focus class on an element.
-	 */
-	function toggleFocus() {
-		if ( event.type === 'focus' || event.type === 'blur' ) {
-			let self = this;
-			// Move up through the ancestors of the current link until we hit .nav-menu.
-			while ( ! self.classList.contains( 'nav-menu' ) ) {
-				// On li elements toggle the class .focus.
-				if ( 'li' === self.tagName.toLowerCase() ) {
-					self.classList.toggle( 'focus' );
-				}
-				self = self.parentNode;
+	cleanAllChildrenAttributes() {
+		this.menuToTarget.querySelectorAll( ' ul ' ).forEach( ( subMenu ) => {
+			this.cleanAllAttributes( subMenu );
+		} );
+	}
+	cleanAllSiblingsAttributes() {
+		this.parentSiblings.forEach( ( e ) => {
+			this.cleanAllAttributes( e );
+		} );
+	}
+	cleanAllAttributes( e ) {
+		e.classList.remove( 'active' );
+		const closestParent = this.getClosestParent( e, true );
+		if ( closestParent ) {
+			closestParent.classList.remove( 'active' );
+			const closestParentBtn = closestParent.querySelector( ' button ' );
+			if ( closestParentBtn ) {
+				closestParentBtn.classList.remove( 'active' );
+				closestParentBtn.setAttribute( 'aria-expanded', 'false' );
+			}
+			const closestParentSubMenu = closestParent.querySelector( ' ul ' );
+			if ( closestParentSubMenu ) {
+				closestParentSubMenu.classList.remove( 'active' );
 			}
 		}
-
-		if ( event.type === 'touchstart' ) {
-			const menuItem = this.parentNode;
-			event.preventDefault();
-			for ( const link of menuItem.parentNode.children ) {
-				if ( menuItem !== link ) {
-					link.classList.remove( 'focus' );
-				}
-			}
-			menuItem.classList.toggle( 'focus' );
-		}
 	}
-}() );
+
+	getSiblings( element ) {
+		// for collecting siblings
+		const siblings = [];
+		// if no parent, return no sibling
+		if ( ! element.parentNode ) {
+			return siblings;
+		}
+		// first child of the parent node
+		let sibling = element.parentNode.firstChild;
+
+		// collecting siblings
+		while ( sibling ) {
+			if ( sibling.nodeType === 1 && sibling !== element ) {
+				siblings.push( sibling );
+			}
+			sibling = sibling.nextSibling;
+		}
+		return siblings;
+	}
+}
+
+window.addEventListener( 'load', ( ) => {
+	const mainMenuComponent = document.querySelectorAll( `[id^="base-component-main-navigation"]` );
+	mainMenuComponent.forEach( ( menu ) => {
+		const mainNavigation = new MainNavigationMenu( menu );
+	} );
+	const jsActiveMenusButtons = document.querySelectorAll( '.js-active-menu' );
+} );

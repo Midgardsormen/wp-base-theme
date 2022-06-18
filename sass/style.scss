@@ -56,7 +56,16 @@ Nicolas Gallagher and Jonathan Neal https://necolas.github.io/normalize.css/
 /*--------------------------------------------------------------
 # Generic
 --------------------------------------------------------------*/
+/*breakpoints
+--------------------------------------------- */
+@import "generic/breakpoints";
 
+/*containers
+--------------------------------------------- */
+@import "generic/containers";
+/*grid
+--------------------------------------------- */
+@import "generic/grid";
 /* Normalize
 --------------------------------------------- */
 @import "generic/normalize";
@@ -100,3 +109,7 @@ Nicolas Gallagher and Jonathan Neal https://necolas.github.io/normalize.css/
 /* Alignments
 --------------------------------------------- */
 @import "utilities/alignments";
+
+/* GLOBAL
+--------------------------------------------- */
+@import "utilities/global";
